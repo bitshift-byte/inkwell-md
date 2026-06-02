@@ -11,6 +11,29 @@ import {
   Code, Heading1, Heading2, Heading3, Quote, ListOrdered,
   Command, Minus, FolderPlus, FilePlus, LayoutList, GitBranch
 } from "lucide-react";
+import { isTauri, tauriOpenFolder, tauriReadFile, tauriWatchFolder, tauriCloseWindow, tauriMinimizeWindow, tauriToggleMaximize, tauriStartDragging, tauriOpenUrl } from "./tauri-bridge.js";
+import syntaxReferenceMd from "./assets/syntax-reference.md?raw";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+// Patch themes to remove background so app theme colors show through
+const lightTheme = { ...oneLight, 'pre[class*="language-"]': { ...oneLight['pre[class*="language-"]'], background: "transparent" }, 'code[class*="language-"]': { ...oneLight['code[class*="language-"]'], background: "transparent" } };
+const darkTheme = { ...oneDark, 'pre[class*="language-"]': { ...oneDark['pre[class*="language-"]'], background: "transparent" }, 'code[class*="language-"]': { ...oneDark['code[class*="language-"]'], background: "transparent" } };
+
+/* ═══════════════════════════════════════════════════
+   Convert Tauri FileEntry[] to internal tree format
+   ═══════════════════════════════════════════════════ */
+
+function convertTauriEntries(entries) {
+  return entries.map(e => ({
+    id: e.path || e.id,
+    type: e.entry_type === "folder" ? "folder" : "file",
+    name: e.name,
+    path: e.path,
+    children: e.children ? convertTauriEntries(e.children) : undefined,
+  }));
+}
 
 /* ═══════════════════════════════════════════════════
    Mock Data — File tree & sample content
@@ -30,6 +53,7 @@ const INITIAL_FILE_TREE = [
       },
       { id: "f1-2", type: "file", name: "README.md" },
       { id: "f1-3", type: "file", name: "changelog.md" },
+      { id: "f1-4", type: "file", name: "syntax-reference.md" },
     ]
   },
   {
@@ -164,8 +188,214 @@ Clara presented the updated component library. Feedback focused on:
 `;
 
 function getMarkdownForFile(fileId) {
-  if (fileId === "f2-1") return ALTERNATE_MARKDOWN;
-  return SAMPLE_MARKDOWN;
+  switch (fileId) {
+    case "f2-1": return ALTERNATE_MARKDOWN;
+    case "f1-1-1": return `# Getting Started
+
+Welcome to **Inkwell MD**! This guide will help you set up your development environment.
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+- [Node.js](https://nodejs.org/) v18 or later
+- [Rust](https://www.rust-lang.org/) v1.70 or later
+- A code editor (we recommend VS Code)
+
+## Installation
+
+\`\`\`bash
+git clone https://github.com/bitshift-byte/md-reader.git
+cd md-reader
+npm install
+npm run dev
+\`\`\`
+
+## Project Structure
+
+| Directory | Purpose |
+|-----------|---------|
+| \`src/\` | React frontend source |
+| \`src-tauri/\` | Rust backend source |
+| \`dist/\` | Production build output |
+
+## First Steps
+
+1. Open the app — you'll see the **welcome screen**
+2. Click *Open Folder* to load a Markdown project
+3. Use the sidebar to navigate your files
+4. Switch between Read, Split, and Edit modes
+
+> **Tip:** Press \`Cmd+K\` to open the command palette for quick access to all features.
+
+## Next Steps
+
+- Read the [Configuration Guide](#) to customize your setup
+- Check the [Deployment Guide](#) for building release packages
+`;
+    case "f1-1-2": return `# Configuration
+
+Inkwell MD can be configured through the \`tauri.conf.json\` file and environment variables.
+
+## Tauri Configuration
+
+\`\`\`json
+{
+  "productName": "Inkwell MD",
+  "version": "0.1.0",
+  "identifier": "com.inkwell.md",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173"
+  }
+}
+\`\`\`
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| \`VITE_DEV_PORT\` | \`5173\` | Dev server port |
+| \`TAURI_DEBUG\` | \`true\` | Enable debug logging |
+| \`RUST_LOG\` | \`info\` | Rust log level |
+
+## Design Tokens
+
+The UI uses CSS custom properties for theming:
+
+\`\`\`css
+:root {
+  --seed-bg: #FAFAF9;
+  --seed-fg: #1C1917;
+  --seed-accent: #0D9488;
+}
+\`\`\`
+
+Modify these values in \`styles.css\` to customize the appearance.
+`;
+    case "f1-1-3": return `# Deployment Guide
+
+Build and distribute Inkwell MD as a native desktop application.
+
+## Building for Production
+
+### Frontend
+
+\`\`\`bash
+npm run build
+\`\`\`
+
+This generates optimized assets in the \`dist/\` directory.
+
+### Desktop App (Tauri)
+
+\`\`\`bash
+cargo tauri build
+\`\`\`
+
+This produces platform-specific installers:
+
+| Platform | Output | Format |
+|----------|--------|--------|
+| macOS | \`.dmg\` / \`.app\` | Universal binary |
+| Windows | \`.msi\` / \`.exe\` | NSIS installer |
+| Linux | \`.deb\` / \`.AppImage\` | Package manager |
+
+## Code Signing
+
+For production releases, sign your application:
+
+- **macOS:** Apple Developer ID certificate
+- **Windows:** EV code signing certificate
+- **Linux:** GPG signing (optional)
+
+## Auto-Updates
+
+Tauri supports built-in auto-updates via the \`tauri-plugin-updater\`:
+
+\`\`\`rust
+tauri::Builder::default()
+    .plugin(tauri_plugin_updater::Builder::new().build())
+    .run(tauri::generate_context!())
+\`\`\`
+
+> **Note:** Auto-updates require a hosted endpoint serving the latest release metadata.
+`;
+    case "f1-3": return `# Changelog
+
+All notable changes to Inkwell MD are documented here.
+
+## [0.1.0] — 2026-06-01
+
+### Added
+
+- **File Browser** — Tree view and flat path view with toggle
+- **Three View Modes** — Reading, Split, and Editor modes
+- **Live Preview** — Real-time Markdown rendering with \`react-markdown\`
+- **GFM Support** — Tables, task lists, strikethrough via \`remark-gfm\`
+- **HTML Rendering** — Inline HTML via \`rehype-raw\`, standalone \`.html\` file support
+- **Table of Contents** — Auto-generated TOC with click-to-jump and scroll spy
+- **Command Palette** — \`Cmd+K\` to search files and run commands
+- **Formatting Toolbar** — Quick-insert for Bold, Italic, Code, Links, Headings, etc.
+- **Theme System** — Light/Dark themes with seed-token CSS variables
+- **Tab Management** — Multi-document tabs with close and switch
+- **Open Files & Folders** — System file picker with directory structure preservation
+- **Status Bar** — File name, line count, word count, file type indicator
+
+### Technical
+
+- Built with **Tauri v2** (Rust backend)
+- Frontend: **React 18** + **Vite 6**
+- Markdown: \`react-markdown\` + \`remark-gfm\` + \`rehype-slug\` + \`rehype-raw\`
+- Icons: \`lucide-react\`
+- TOC IDs: \`github-slugger\` for 100% accuracy with \`rehype-slug\`
+`;
+    case "f2-2": return `# Ideas & Notes
+
+## Feature Ideas
+
+### Focus Mode
+
+A distraction-free writing mode that hides all panels:
+
+- Sidebar slides out with a smooth animation
+- TOC panel collapses
+- Editor takes full width
+- Minimal status bar or hide completely
+- Exit with \`Escape\` or \`Cmd+Shift+F\`
+
+### Vim Keybindings
+
+Optional Vim-style editing for keyboard-driven users:
+
+- Normal / Insert / Visual modes
+- \`hjkl\` navigation
+- \`dd\` to delete line, \`yy\` to yank
+- \`/search\` within document
+
+### Export Options
+
+| Format | Library | Priority |
+|--------|---------|----------|
+| PDF | Puppeteer / wkhtmltopdf | High |
+| DOCX | docx.js | Medium |
+| HTML | Built-in | High |
+| LaTeX | pandoc | Low |
+
+## Architecture Thoughts
+
+> The best code is no code at all. Every line written is a line that must be maintained.
+> — Jeff Atwood
+
+Consider using Tauri's native APIs for:
+- File system watching (\`tauri-plugin-fs\`)
+- System notifications for build completion
+- Native menu bar integration
+- Clipboard history for paste operations
+`;
+    case "f1-4": return syntaxReferenceMd;
+    default: return SAMPLE_MARKDOWN;
+  }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -690,6 +920,7 @@ export default function App(qoderProps) {
   const [activeTabId, setActiveTabId] = useState("f1-2");
   const [searchQuery, setSearchQuery] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [linkModal, setLinkModal] = useState(null); // { url, text } or null
   const [contentFade, setContentFade] = useState(false);
   const [sidebarView, setSidebarView] = useState("tree"); // "tree" | "flat"
 
@@ -697,6 +928,10 @@ export default function App(qoderProps) {
   const [fileTree, setFileTree] = useState(INITIAL_FILE_TREE);
   // Store opened file contents: { fileId: markdownString }
   const [fileContents, setFileContents] = useState({});
+  // Track watched folder cleanup functions
+  const unwatchRef = useRef([]);
+  // Track which folder each file came from (real paths)
+  const filePathMap = useRef({}); // { fileId: realPath }
 
   const editorRef = useRef(null);
   const readingRef = useRef(null);
@@ -710,6 +945,14 @@ export default function App(qoderProps) {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  // Cleanup file watchers on unmount
+  useEffect(() => {
+    return () => {
+      unwatchRef.current.forEach(fn => fn());
+      unwatchRef.current = [];
+    };
+  }, []);
 
   /* ── Open file from disk ─────────────────────────── */
   const handleOpenFile = useCallback(() => {
@@ -775,7 +1018,79 @@ export default function App(qoderProps) {
   }, []);
 
   /* ── Open folder ─────────────────────────────────── */
-  const handleOpenFolder = useCallback(() => {
+  const handleOpenFolder = useCallback(async () => {
+    // Try Tauri first
+    if (isTauri()) {
+      const result = await tauriOpenFolder();
+      if (!result) return; // user cancelled
+
+      const { folderPath, folderName, entries } = result;
+      const folderId = folderPath;
+      const children = convertTauriEntries(entries);
+
+      // Build path map for file watching
+      const newPaths = {};
+      function collectPaths(nodes) {
+        for (const node of nodes) {
+          if (node.type === "file" && node.path) {
+            newPaths[node.id] = node.path;
+          }
+          if (node.children) collectPaths(node.children);
+        }
+      }
+      collectPaths(children);
+      filePathMap.current = { ...filePathMap.current, ...newPaths };
+
+      // Pre-load all file contents
+      const contents = {};
+      for (const [fileId, filePath] of Object.entries(newPaths)) {
+        const content = await tauriReadFile(filePath);
+        if (content !== null) contents[fileId] = content;
+      }
+      setFileContents(prev => ({ ...prev, ...contents }));
+
+      // Add folder to tree
+      const newFolder = { id: folderId, type: "folder", name: folderName, children };
+      setFileTree(prev => [...prev, newFolder]);
+      setExpandedFolders(prev => new Set([...prev, folderId]));
+
+      // Auto-select first file
+      const allFlat = [];
+      function flattenForSelect(nodes) {
+        for (const n of nodes) {
+          if (n.type === "file") allFlat.push(n);
+          if (n.children) flattenForSelect(n.children);
+        }
+      }
+      flattenForSelect(children);
+      if (allFlat.length > 0) {
+        const first = allFlat[0];
+        setSelectedFileId(first.id);
+        setSelectedFileName(first.name);
+        setEditorContent(contents[first.id] || "");
+        setOpenTabs(prev => [...prev, { id: first.id, name: first.name }]);
+        setActiveTabId(first.id);
+      }
+
+      // Start file watching
+      const unwatch = await tauriWatchFolder(folderPath, async (change) => {
+        const content = await tauriReadFile(change.path);
+        if (content !== null) {
+          setFileContents(prev => ({ ...prev, [change.path]: content }));
+          // Update editor if this file is currently selected
+          setSelectedFileId(currentId => {
+            if (currentId === change.path) {
+              setEditorContent(content);
+            }
+            return currentId;
+          });
+        }
+      });
+      unwatchRef.current.push(unwatch);
+      return;
+    }
+
+    // Fallback: browser file picker
     folderInputRef.current?.click();
   }, []);
 
@@ -887,13 +1202,25 @@ export default function App(qoderProps) {
   }, [handleOpenFile, handleOpenFolder]);
 
   /* ── Select a file ───────────────────────────────── */
-  const handleSelectFile = useCallback((fileId, fileName) => {
+  const handleSelectFile = useCallback(async (fileId, fileName) => {
     setContentFade(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setSelectedFileId(fileId);
       setSelectedFileName(fileName);
-      // Use real file content if available, otherwise mock
-      const content = fileContents[fileId] || getMarkdownForFile(fileId);
+
+      // Try to re-read from disk if file has a real path (Tauri)
+      const realPath = filePathMap.current[fileId];
+      let content;
+      if (realPath && isTauri()) {
+        const fresh = await tauriReadFile(realPath);
+        if (fresh !== null) {
+          content = fresh;
+          setFileContents(prev => ({ ...prev, [fileId]: fresh }));
+        }
+      }
+      if (!content) {
+        content = fileContents[fileId] || getMarkdownForFile(fileId);
+      }
       setEditorContent(content);
       setOpenTabs(prev => {
         if (prev.find(t => t.id === fileId)) return prev;
@@ -986,6 +1313,54 @@ export default function App(qoderProps) {
   const activeScrollRef = viewMode === "read" ? readingRef : previewRef;
   const isHtmlFile = selectedFileName && /\.(html|htm)$/i.test(selectedFileName);
 
+  const markdownComponents = useMemo(() => ({
+    pre: ({ children }) => <>{children}</>,
+    a: ({ href, children, ...props }) => {
+      // Internal anchor links (#heading) should work normally
+      if (href && href.startsWith("#")) {
+        return <a href={href} {...props}>{children}</a>;
+      }
+      return (
+        <a
+          href={href}
+          {...props}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setLinkModal({ url: href, text: typeof children === "string" ? children : href });
+          }}
+        >
+          {children}
+        </a>
+      );
+    },
+    code: ({ node, className, children, ...props }) => {
+      const match = /language-(\w+)/.exec(className || "");
+      const isBlock = !!match || (typeof children === "string" && children.includes("\n"));
+      if (isBlock && match) {
+        return (
+          <SyntaxHighlighter
+            style={theme === "dark" ? darkTheme : lightTheme}
+            language={match[1]}
+            PreTag="div"
+            customStyle={{
+              margin: 0,
+              padding: "12px 16px",
+              background: "transparent",
+              border: "none",
+              borderRadius: "var(--radius-md)",
+              fontSize: "13px",
+              lineHeight: "1.6",
+            }}
+          >
+            {String(children).replace(/\n$/, "")}
+          </SyntaxHighlighter>
+        );
+      }
+      return <code className={className} {...props}>{children}</code>;
+    },
+  }), [theme]);
+
   return (
     <div className={["app-shell", qoderProps?.className].filter(Boolean).join(" ")} data-component="app-shell" style={qoderProps?.style} data-qoder-id={qoderProps?.["data-qoder-id"]} data-qoder-source={qoderProps?.["data-qoder-source"]}>
       {/* Hidden file inputs */}
@@ -1017,12 +1392,48 @@ export default function App(qoderProps) {
         onAction={handlePaletteAction}
        data-qoder-id="qel-commandpalette-f114f10a" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-commandpalette-f114f10a&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;commandpalette&quot;,&quot;loc&quot;:{&quot;line&quot;:834,&quot;column&quot;:7}}"/>
 
+      {/* ── Link Confirmation Modal ────────────────── */}
+      {linkModal && (
+        <div className="link-modal-overlay" onClick={() => setLinkModal(null)}>
+          <div className="link-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="link-modal__header">
+              <span className="link-modal__title">Open External Link</span>
+              <button className="icon-btn" onClick={() => setLinkModal(null)}><X size={16} /></button>
+            </div>
+            <div className="link-modal__body">
+              <p className="link-modal__label">You are about to open:</p>
+              <p className="link-modal__url" title={linkModal.url}>{linkModal.url}</p>
+            </div>
+            <div className="link-modal__footer">
+              <button className="btn btn--secondary" onClick={() => setLinkModal(null)}>Cancel</button>
+              <button className="btn btn--primary" onClick={() => {
+                if (isTauri()) {
+                  tauriOpenUrl(linkModal.url);
+                } else {
+                  window.open(linkModal.url, "_blank", "noopener,noreferrer");
+                }
+                setLinkModal(null);
+              }}>Open in Browser</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Title Bar ──────────────────────────────── */}
-      <header className="title-bar" data-component="title-bar" data-qoder-id="qel-title-bar-9471fcab" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-title-bar-9471fcab&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;title-bar&quot;,&quot;loc&quot;:{&quot;line&quot;:843,&quot;column&quot;:7}}">
-        <div className="title-bar__traffic-lights" data-qoder-id="qel-title-bar__traffic-lights-1add7ae7" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-title-bar__traffic-lights-1add7ae7&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;title-bar__traffic-lights&quot;,&quot;loc&quot;:{&quot;line&quot;:844,&quot;column&quot;:9}}">
-          <span className="traffic-light traffic-light--close"  data-qoder-id="qel-traffic-light-0d269cf0" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-traffic-light-0d269cf0&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;traffic-light&quot;,&quot;loc&quot;:{&quot;line&quot;:845,&quot;column&quot;:11}}"/>
-          <span className="traffic-light traffic-light--minimize"  data-qoder-id="qel-traffic-light-0e269e83" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-traffic-light-0e269e83&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;traffic-light&quot;,&quot;loc&quot;:{&quot;line&quot;:846,&quot;column&quot;:11}}"/>
-          <span className="traffic-light traffic-light--maximize"  data-qoder-id="qel-traffic-light-1326a662" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-traffic-light-1326a662&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;traffic-light&quot;,&quot;loc&quot;:{&quot;line&quot;:847,&quot;column&quot;:11}}"/>
+      <header className="title-bar" data-component="title-bar" onMouseDown={(e) => {
+        if (e.target.closest("button, .title-bar__actions, .view-mode-group")) return;
+        if (isTauri()) tauriStartDragging();
+      }} data-qoder-id="qel-title-bar-9471fcab" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-title-bar-9471fcab&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;title-bar&quot;,&quot;loc&quot;:{&quot;line&quot;:843,&quot;column&quot;:7}}">
+        <div className="title-bar__traffic-lights" data-qoder-id="qel-title-bar__traffic-lights-1add7ae7">
+          <button className="traffic-light traffic-light--close" onClick={tauriCloseWindow}>
+            <svg viewBox="0 0 12 12" width="8" height="8"><path d="M3.5 3.5L8.5 8.5M8.5 3.5L3.5 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none"/></svg>
+          </button>
+          <button className="traffic-light traffic-light--minimize" onClick={tauriMinimizeWindow}>
+            <svg viewBox="0 0 12 12" width="8" height="8"><path d="M3 6H9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none"/></svg>
+          </button>
+          <button className="traffic-light traffic-light--maximize" onClick={tauriToggleMaximize}>
+            <svg viewBox="0 0 12 12" width="8" height="8"><path d="M3.5 3.5L6 1M6 11L8.5 8.5M8.5 3.5L11 6M1 6L3.5 8.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" fill="none"/></svg>
+          </button>
         </div>
 
         <div className="title-bar__center" data-qoder-id="qel-title-bar__center-6d45d833" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-title-bar__center-6d45d833&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;title-bar__center&quot;,&quot;loc&quot;:{&quot;line&quot;:850,&quot;column&quot;:9}}">
@@ -1214,7 +1625,7 @@ export default function App(qoderProps) {
                         <div className="html-preview" dangerouslySetInnerHTML={{ __html: editorContent }}  data-qoder-id="qel-html-preview-30e4a73d" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-html-preview-30e4a73d&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;html-preview&quot;,&quot;loc&quot;:{&quot;line&quot;:1211,&quot;column&quot;:25}}"/>
                       ) : (
                         <div className="markdown-body" data-qoder-id="qel-markdown-body-4f42d79e" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-markdown-body-4f42d79e&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;markdown-body&quot;,&quot;loc&quot;:{&quot;line&quot;:1213,&quot;column&quot;:25}}">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeRaw]} data-qoder-id="qel-reactmarkdown-59c911f6" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-reactmarkdown-59c911f6&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;reactmarkdown&quot;,&quot;loc&quot;:{&quot;line&quot;:1214,&quot;column&quot;:27}}">{editorContent}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeRaw]} components={markdownComponents} data-qoder-id="qel-reactmarkdown-59c911f6" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-reactmarkdown-59c911f6&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;reactmarkdown&quot;,&quot;loc&quot;:{&quot;line&quot;:1214,&quot;column&quot;:27}}">{editorContent}</ReactMarkdown>
                         </div>
                       )}
                     </div>
@@ -1242,7 +1653,7 @@ export default function App(qoderProps) {
                           <div className="html-preview" dangerouslySetInnerHTML={{ __html: editorContent }}  data-qoder-id="qel-html-preview-31e6e767" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-html-preview-31e6e767&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;html-preview&quot;,&quot;loc&quot;:{&quot;line&quot;:1239,&quot;column&quot;:27}}"/>
                         ) : (
                           <div className="markdown-body" data-qoder-id="qel-markdown-body-4a450e56" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-markdown-body-4a450e56&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;markdown-body&quot;,&quot;loc&quot;:{&quot;line&quot;:1241,&quot;column&quot;:27}}">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeRaw]} data-qoder-id="qel-reactmarkdown-d4c60200" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-reactmarkdown-d4c60200&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;reactmarkdown&quot;,&quot;loc&quot;:{&quot;line&quot;:1242,&quot;column&quot;:29}}">{editorContent}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeRaw]} components={markdownComponents} data-qoder-id="qel-reactmarkdown-d4c60200" data-qoder-source="{&quot;qoderId&quot;:&quot;qel-reactmarkdown-d4c60200&quot;,&quot;filePath&quot;:&quot;react-vite/src/App.jsx&quot;,&quot;componentName&quot;:&quot;App&quot;,&quot;elementRole&quot;:&quot;reactmarkdown&quot;,&quot;loc&quot;:{&quot;line&quot;:1242,&quot;column&quot;:29}}">{editorContent}</ReactMarkdown>
                           </div>
                         )}
                       </div>

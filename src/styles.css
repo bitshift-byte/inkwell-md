@@ -147,13 +147,16 @@ html, body, #root {
   overflow: hidden;
 }
 
+html, body {
+  background: transparent;
+}
+
 body {
   font-family: var(--font-sans);
   font-size: var(--fs-base);
   font-weight: 400;
   line-height: 1.6;
   color: var(--fg-primary);
-  background: var(--bg-app);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -182,6 +185,8 @@ body {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  background: var(--bg-app);
+  border-radius: 10px;
 }
 
 /* ── Title Bar ─────────────────────────────────── */
@@ -194,6 +199,7 @@ body {
   padding: 0 var(--sp-3);
   background: var(--bg-sidebar);
   border-bottom: 1px solid var(--border-subtle);
+  border-radius: 10px 10px 0 0;
   user-select: none;
   -webkit-app-region: drag;
   gap: var(--sp-2);
@@ -211,13 +217,31 @@ body {
   width: 12px;
   height: 12px;
   border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+  transition: all var(--transition-fast);
+}
+
+.traffic-light svg {
+  opacity: 0;
+  color: rgba(0, 0, 0, 0.55);
   transition: opacity var(--transition-fast);
 }
-.traffic-light--close { background: var(--traffic-close); }
-.traffic-light--minimize { background: var(--traffic-minimize); }
-.traffic-light--maximize { background: var(--traffic-maximize); }
 
-.traffic-light:hover { opacity: 0.8; }
+.title-bar__traffic-lights:hover .traffic-light svg {
+  opacity: 1;
+}
+
+.traffic-light--close { background: #FF5F57; }
+.traffic-light--minimize { background: #FFBD2E; }
+.traffic-light--maximize { background: #28C840; }
+
+.traffic-light:hover { filter: brightness(0.9); }
 
 .title-bar__center {
   flex: 1;
@@ -1334,4 +1358,120 @@ button:focus:not(:focus-visible) {
   transition: background-color var(--transition-base),
               border-color var(--transition-base),
               color var(--transition-base);
+}
+
+/* ── Link Confirmation Modal ───────────────────── */
+.link-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.15s ease;
+}
+
+.link-modal {
+  width: 420px;
+  max-width: 90vw;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: scaleIn 0.15s ease;
+}
+
+.link-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.link-modal__title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.link-modal__body {
+  padding: var(--sp-4);
+}
+
+.link-modal__label {
+  font-size: var(--fs-sm);
+  color: var(--fg-secondary);
+  margin-bottom: var(--sp-2);
+}
+
+.link-modal__url {
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: var(--fg-accent);
+  background: var(--bg-sidebar);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  word-break: break-all;
+  line-height: 1.5;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.link-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-sidebar);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn--primary {
+  background: var(--fg-accent);
+  color: #fff;
+  border-color: var(--fg-accent);
+}
+
+.btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.btn--secondary {
+  background: transparent;
+  color: var(--fg-secondary);
+  border-color: var(--border-default);
+}
+
+.btn--secondary:hover {
+  background: var(--bg-sidebar);
+  color: var(--fg-primary);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }

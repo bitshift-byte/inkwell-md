@@ -1,16 +1,26 @@
-use tauri::Manager;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use notify::RecommendedWatcher;
 
 mod commands;
+
+pub struct WatcherState {
+    pub watchers: Mutex<HashMap<String, RecommendedWatcher>>,
+}
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
-        .setup(|app| {
+        .manage(WatcherState {
+            watchers: Mutex::new(HashMap::new()),
+        })
+        .setup(|_app| {
             #[cfg(debug_assertions)]
             {
-                let window = app.get_webview_window("main").unwrap();
+                use tauri::Manager;
+                let window = _app.get_webview_window("main").unwrap();
                 window.open_devtools();
             }
             Ok(())
@@ -20,6 +30,8 @@ pub fn run() {
             commands::read_file,
             commands::save_file,
             commands::get_app_info,
+            commands::watch_directory,
+            commands::unwatch_directory,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Inkwell MD");

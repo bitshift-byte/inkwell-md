@@ -4,11 +4,11 @@
   "version": "0.1.0",
   "identifier": "com.inkwell.md",
   "build": {
+    "beforeBuildCommand": "npm run build",
     "devUrl": "http://127.0.0.1:5173",
     "frontendDist": "../dist"
   },
   "app": {
-    "title": "Inkwell MD",
     "windows": [
       {
         "title": "Inkwell MD",
@@ -17,7 +17,7 @@
         "minWidth": 800,
         "minHeight": 600,
         "decorations": false,
-        "transparent": false,
+        "transparent": true,
         "resizable": true,
         "fullscreen": false
       }
@@ -37,13 +37,5 @@
       "icons/icon.ico"
     ]
   },
-  "plugins": {
-    "dialog": {},
-    "fs": {
-      "scope": {
-        "allow": ["**"],
-        "deny": []
-      }
-    }
-  }
+  "plugins": {}
 }

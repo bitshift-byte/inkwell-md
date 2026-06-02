@@ -5,9 +5,6 @@ export default defineConfig({
   plugins: [react()],
   root: '.',
   build: {
-    outDir: 'dist',
-    rollupOptions: {
-      input: 'canvas-design.html'
-    }
+    outDir: 'dist'
   }
 })
