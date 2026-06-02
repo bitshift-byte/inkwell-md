@@ -205,7 +205,7 @@ Before you begin, make sure you have the following installed:
 ## Installation
 
 \`\`\`bash
-git clone https://github.com/bitshift-byte/md-reader.git
+git clone https://github.com/bitshift-byte/inkwell-md.git
 cd md-reader
 npm install
 npm run dev

@@ -90,7 +90,7 @@ Most Markdown editors try to do too much. Inkwell takes a different approach —
 ### Development
 
 ```bash
-git clone https://github.com/bitshift-byte/md-reader.git
+git clone https://github.com/bitshift-byte/inkwell-md.git
 cd md-reader
 npm install
 npm run dev
@@ -200,7 +200,7 @@ Toggle between light and dark themes — every derived token transitions smoothl
 ### 开发
 
 ```bash
-git clone https://github.com/bitshift-byte/md-reader.git
+git clone https://github.com/bitshift-byte/inkwell-md.git
 cd md-reader
 npm install
 npm run dev
@@ -259,5 +259,5 @@ Inkwell MD 使用 **Seed Token CSS 自定义属性** 系统。所有视觉 Token
 ---
 
 <p align="center">
-  <em>Built with care · <a href="https://github.com/bitshift-byte/md-reader">github.com/bitshift-byte/md-reader</a></em>
+  <em>Built with care · <a href="https://github.com/bitshift-byte/inkwell-md">github.com/bitshift-byte/inkwell-md</a></em>
 </p>

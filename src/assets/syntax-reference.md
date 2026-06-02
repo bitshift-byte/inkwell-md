@@ -41,7 +41,7 @@ Underscore variants also work: _italic with underscores_, __bold with underscore
 
 ### Autolinks
 
-<https://github.com/bitshift-byte/md-reader>
+<https://github.com/bitshift-byte/inkwell-md>
 
 ### Reference-Style Links
 
@@ -64,7 +64,7 @@ See the [Getting Started guide](#getting-started) or jump to [Code Blocks](#8-co
 
 ### Linked Image
 
-[![GitHub Stars](https://img.shields.io/badge/Inkwell_MD-v0.1.0-teal?style=flat-square)](https://github.com/bitshift-byte/md-reader)
+[![GitHub Stars](https://img.shields.io/badge/Inkwell_MD-v0.1.0-teal?style=flat-square)](https://github.com/bitshift-byte/inkwell-md)
 
 ### Image with Surrounding Text
 
@@ -299,7 +299,7 @@ fn main() {
 
 ```bash
 # Clone and set up the project
-$ git clone https://github.com/bitshift-byte/md-reader.git
+$ git clone https://github.com/bitshift-byte/inkwell-md.git
 $ cd md-reader
 
 # Install dependencies
@@ -577,6 +577,6 @@ graph TD
 
 *— Inkwell MD Syntax Reference · End of Document —*
 
-*Crafted with care · [github.com/bitshift-byte/md-reader](https://github.com/bitshift-byte/md-reader)*
+*Crafted with care · [github.com/bitshift-byte/inkwell-md](https://github.com/bitshift-byte/inkwell-md)*
 
 </div>
